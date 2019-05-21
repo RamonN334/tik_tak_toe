@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link rel="stylesheet" href="../styles/main.css" type="text/css">
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+    </head>
+    <body>
+        <script src="../js/index.js"></script>
+        <div id="wrapper">
+            <div id="games-list"></div>
+        </div>
+
+        <div id="join-game-modal" class="modal">
+            <div class="modal-content">
+                <form id="join-game-form" action="" method="post">
+                    <input type="hidden" name="gameToken" id="gameToken">
+                    <input type="text" name="userName" id="userName" placeholder="username">
+                    <input type="button" value="join" id="join-game">
+                </form>
+                <span class="close">&times;</span>
+            </div>
+        </div>
+
+        <button id="myBtn">Open Modal</button>
+
+        <!-- The Modal -->
+        <div id="new-game-modal" class="modal">
+
+        <!-- Modal content -->
+        <div class="modal-content">
+            <form id="new-game-form" action="">
+                <input id="userName" type="text" placeholder="username">
+                <input id="size" type="number" min="3" placeholder="size">
+                <input id="create-game" type="button" value="Create">
+            </form>
+            <span class="close">&times;</span>
+        </div>
+
+        </div>
+    </body>
+</html>

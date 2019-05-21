@@ -4,8 +4,12 @@ const express = require('express');
 const repository = require('../repository');
 const router = express.Router();
 
+// const app = express();
+// app.use(express.urlencoded({extended: true}));
+
 router.post('/new', (req, res) => {
     const userData = req.body;
+    console.log(userData);
     if ('userName' in userData && 'size' in userData) {
         const accessToken = genUUID();
         const gameToken = genUUID();
@@ -46,7 +50,7 @@ router.post('/new', (req, res) => {
 router.get('/list', (req, res) => {
     // TO DO
     // Calculate game duration
-    console.log(`[INFO] ${new Date()}: GET to /games/list`);
+    // console.log(`[INFO] ${new Date()}: GET to /games/list`);
     repository.getGames()
     .then(
         results => {
@@ -64,9 +68,9 @@ router.get('/list', (req, res) => {
                 transformedResults.push(item);
             }
             res.json({
-            'status': 'OK',
-            'code': 0,
-            'games': transformedResults
+                'status': 'OK',
+                'code': 0,
+                'games': transformedResults
             });
         },
         () => res.send(errorResponse(2, `Don't succeed to get games list`))
@@ -77,28 +81,38 @@ router.post('/join', (req, res) => {
     // TO DO
     // If two players already play the game, then only visitors
     const userData = req.body;
+    console.log(userData);
     if ('gameToken' in userData && 'userName' in userData) {
         const accessToken = genUUID();
-        repository.joinPlayerToGame(userData['gameToken'], userData['userName'], accessToken);
-        repository.insertIntoGameSessions({
-            'accessToken': accessToken,
-            'gameToken': userData['gameToken'],
-            'yourTurn': false,
-            'yourSign': '0'
-        });
 
-        return res.json({
-            'status': 'OK',
-            'code': 0,
-            'accessToken': accessToken
+        repository.getGameByGameToken(userData['gameToken'])
+        .then((data) => {
+            let game = data;
+            console.log(`Result: ${data['state']}`);
+            console.log(game['state']);
+            if (game['state'] == 'playing') {
+                repository.joinToGameAsObserver(userData['gameToken'], accessToken);
+            }
+            else {
+                repository.joinToGameAsPlayer(userData['gameToken'], userData['userName'], accessToken);
+            }
+
+            res.json({
+                'status': 'OK',
+                'code': 0,
+                'accessToken': accessToken
+            });
         });
     }
+    else {
+        res.json(errorResponse(1, 'Invalid request'));
+    }
 
-    return res.json(errorResponse(1, 'Invalid request'));
 });
 
 router.post('/do_step', (req, res) => {
     // TO DO
+
     const accessToken = req.header('accessToken')
     console.log(accessToken);
     if (accessToken) {
@@ -140,15 +154,14 @@ router.get('/state', (req, res) => {
                 'field': JSON.parse(result[0]['field'])
             }
             // res.json(resData);
-            res.render('game', {}, (err, html) => {
-                if (err) throw err;
-                res.json(resData);
-            });
+            res.json(resData);
             // res.json(resData);
         },
-        () => res.send(errorResponse(3, `Not found accessToken in headers`)));
+        () => res.send(errorResponse(4, `Error with query at database`)));
     }
-
+    else {
+        res.send(errorResponse(3, `Not found accessToken in headers`));
+    }
 });
 
 module.exports = router;

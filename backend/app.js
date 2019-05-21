@@ -1,25 +1,23 @@
 'use strict';
 const express = require('express');
 const path = require('path');
-const gamesRouter = require('./routes/games');
+const morgan = require('morgan');
 
 const app = express();
-app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'jade');
 app.use(express.urlencoded({extended: true}));
 app.use(express.json());
+// app.use(morgan('combined'));
 
 app.all('*', (req, res, next) => {
     res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, accesstoken");
     next();
  });
 
 app.use(express.static(path.join(__dirname, 'public')));
 
+const gamesRouter = require('./routes/games');
 app.use('/games', gamesRouter);
-
-app.get('/', (req, res) => res.render('index'));
 
 const port = 8001;
 

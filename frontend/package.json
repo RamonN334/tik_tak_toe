@@ -2,9 +2,12 @@
     "name": "frontend",
     "version": "0.1.0",
     "scripts": {
-        "start": "lite-server"
+        "start": "nodemon client.js"
     },
     "devDependencies": {
         "lite-server": "^2.2.1"
+    },
+    "dependencies": {
+        "express": "^4.17.0"
     }
 }

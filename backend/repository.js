@@ -56,7 +56,7 @@ module.exports = {
     });
   },
 
-  joinPlayerToGame: (gameToken, userName, accessToken) => {
+  joinToGameAsPlayer: (gameToken, userName, accessToken) => {
     connection.query(
       `UPDATE games SET opponent = ?, state = "playing" WHERE gameToken = ?`, 
       [userName,  gameToken], 
@@ -66,6 +66,14 @@ module.exports = {
       }
     );
 
+    module.exports.insertIntoGameSessions({
+      'accessToken': accessToken,
+      'gameToken': gameToken,
+      'yourSign': '0'
+    });
+  },
+
+  joinToGameAsObserver: (gameToken, accessToken) => {
     module.exports.insertIntoGameSessions({
       'accessToken': accessToken,
       'gameToken': gameToken,
@@ -84,6 +92,20 @@ module.exports = {
         (error, result, fields) => {
           if (error) throw error;
           resolve(result);
+        }
+      )
+    });
+  },
+
+  getGameByGameToken: (gameToken) => {
+    return new Promise((resolve, reject) => {
+      connection.query(
+        `SELECT * FROM games
+        WHERE gameToken = ?`,
+        [gameToken],
+        (error, result, fields) => {
+          if (error) throw error;
+          resolve(result[0]);
         }
       )
     });
