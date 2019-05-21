@@ -55,17 +55,29 @@ router.get('/list', (req, res) => {
     .then(
         results => {
             let transformedResults = [];
+            let notActiveGames = [];
             for (let game of results) {
-                const item = {
-                    'gameToken': game['gameToken'],
-                    'owner': game['owner'],
-                    'opponent': game['opponent'],
-                    'size': game['size'],
-                    'gameDuration': new Date() - game['gameStart'],
-                    'gameResult': game['gameResult'],
-                    'state': game['state']
+                let gameDurationWihoutUpdate = new Date() - game['lastUpdate'];
+                console.log(gameDurationWihoutUpdate);
+                if (gameDurationWihoutUpdate < 300000) {
+                    const item = {
+                        'gameToken': game['gameToken'],
+                        'owner': game['owner'],
+                        'opponent': game['opponent'],
+                        'size': game['size'],
+                        'gameDuration': new Date() - game['gameStart'],
+                        'gameResult': game['gameResult'],
+                        'state': game['state']
+                    }
+                    transformedResults.push(item);
                 }
-                transformedResults.push(item);
+                else {
+                    notActiveGames.push(game['gameToken']);
+                }
+                // console.log(notActiveGames);
+                if (notActiveGames.length != 0) {
+                    repository.deleteNotActiveGames(notActiveGames);
+                }
             }
             res.json({
                 'status': 'OK',

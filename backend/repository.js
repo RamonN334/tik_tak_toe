@@ -58,8 +58,8 @@ module.exports = {
 
   joinToGameAsPlayer: (gameToken, userName, accessToken) => {
     connection.query(
-      `UPDATE games SET opponent = ?, state = "playing" WHERE gameToken = ?`, 
-      [userName,  gameToken], 
+      `UPDATE games SET opponent = ?, lastUpdate = ?, state = "playing" WHERE gameToken = ?`, 
+      [userName, new Date(), gameToken], 
       (error, results, fields) => {
         if (error) throw error;
         console.log(results.affectedRows);
@@ -111,7 +111,7 @@ module.exports = {
     });
   },
 
-  deleteGame: (gameToken) => {
+  deleteGameByGameToken: (gameToken) => {
     return new Promise((resolve, reject) => {
       connection.query(
         `DELETE FROM games WHERE gameToken = ?`,
@@ -122,5 +122,18 @@ module.exports = {
         }
       );
     })
+  },
+
+  deleteNotActiveGames: (gameTokens) => {
+      let query = connection.query(
+        'DELETE FROM games WHERE gameToken IN (?)',
+        [gameTokens],
+        (error, results, fields) => {
+          if (error) throw error;
+          console.log(`Deleted ${results.affectedRows} rows`);
+        }
+      );
+
+      console.log(query.sql);
   }
 }
