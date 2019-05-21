@@ -1,0 +1,10 @@
+{
+    "name": "frontend",
+    "version": "0.1.0",
+    "scripts": {
+        "start": "lite-server"
+    },
+    "devDependencies": {
+        "lite-server": "^2.2.1"
+    }
+}

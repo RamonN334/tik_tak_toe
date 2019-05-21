@@ -1,0 +1,17 @@
+{
+  "name": "tik_tak_toe",
+  "version": "0.1.0",
+  "description": "Tik Tak Toe test task",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node app.js"
+  },
+  "author": "Igor Sitnikov",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.16.4",
+    "mysql": "^2.17.1",
+    "uuid": "^3.3.2"
+  }
+}
