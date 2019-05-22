@@ -48,9 +48,22 @@ module.exports = {
         `SELECT * FROM games 
         JOIN gameSessions AS gs ON games.gameToken = gs.gameToken AND gs.accessToken = ?`,
         [accessToken],
-        (error, results, fields) => {
+        (error, result, fields) => {
           if (error) throw error;
-          resolve(results);
+          resolve(result[0]);
+        }
+      );
+    });
+  },
+
+  getPlayer: (accessToken) => {
+    return new Promise((resolve, reject) => {
+      connection.query(
+        `SELECT * FROM gameSessions WHERE accessToken = ?`,
+        [accessToken],
+        (error, result, fields) => {
+          if (error) throw error;
+          resolve(result[0]);
         }
       );
     });
@@ -69,29 +82,42 @@ module.exports = {
     module.exports.insertIntoGameSessions({
       'accessToken': accessToken,
       'gameToken': gameToken,
+      'userName': userName,
       'yourSign': '0'
     });
   },
 
-  joinToGameAsObserver: (gameToken, accessToken) => {
+  joinToGameAsObserver: (gameToken, userName, accessToken) => {
     module.exports.insertIntoGameSessions({
       'accessToken': accessToken,
       'gameToken': gameToken,
-      'yourSign': '0'
+      'userName': userName,
+      'yourSign': '0',
+      'gameRole': 'Observer'
     });
+  },
+
+  updateGameField: (gameToken, updatedField) => {
+    connection.query(
+      `UPDATE games SET field = ? WHERE gameToken = ?`,
+      [updatedField, gameToken],
+      (error, result, fields) => {
+        if (error) throw error.sql;
+      }
+    );
   },
 
   getGameState: (accessToken) => {
     return new Promise((resolve, reject) => {
       connection.query(
-        `SELECT g.gameStart, g.gameResult, g.state, g.field, gs.yourTurn
+        `SELECT g.owner, g.opponent, g.gameStart, g.gameResult, g.state, g.field, gs.yourTurn
         FROM games AS g
         JOIN gameSessions as gs ON g.gameToken = gs.gameToken
         WHERE gs.accessToken = ?`,
         [accessToken],
         (error, result, fields) => {
           if (error) throw error;
-          resolve(result);
+          resolve(result[0]);
         }
       )
     });
@@ -135,5 +161,43 @@ module.exports = {
       );
 
       console.log(query.sql);
+  },
+
+  updateGameSession: (accessToken, data) => {
+    connection.query(
+      `UPDATE gameSessions SET ? WHERE accessToken = ?`
+    ),
+    [data, accessToken],
+    (error, result, fields) => {
+      if (error) throw error;
+    }
+  },
+
+  switchActivePlayer: (activePlayerAccessToken, gameToken) => {
+    connection.query(
+      `UPDATE gameSessions SET yourTurn = 0 WHERE accessToken = ? AND gameRole = "Player"`,
+      [activePlayerAccessToken],
+      (error, result, fields) => {
+        if (error) throw error.sql;
+      }
+    );
+
+    connection.query(
+      `UPDATE gameSessions SET yourTurn = 1 WHERE gameToken = ? AND accessToken <> ? AND gameRole = "Player"`,
+      [gameToken, activePlayerAccessToken],
+      (error, result, fields) => {
+        if (error) throw error.sql;
+      }
+    );
+  },
+
+  updateLastActionTime: (gameToken) => {
+    connection.query(
+      `UPDATE games SET lastUpdate = ? WHERE gameToken = ?`,
+      [new Date(), gameToken],
+      (error, result, fields) => {
+        if (error) throw error;
+      }
+    )
   }
 }

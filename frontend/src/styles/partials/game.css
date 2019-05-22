@@ -1,11 +1,43 @@
+#game-stat {
+    width: 100%;
+    height: 80px;
+    margin-bottom: 20px;
+}
+
+#game-stat > div {
+    display: inline-block;
+    vertical-align: middle;
+    line-height: 80px;
+}
+
+#game-stat #owner,
+#game-stat #opponent {
+    width: 20%;
+}
+
+#game-stat #owner {
+    text-align: left;
+}
+
+#game-stat #opponent {
+    text-align: right;
+}
+
+#game-stat #current-state {
+    width: 60%;
+    text-align: center;
+}
+
 #field table {
     margin: auto;
-    width: 400px;
-    height: 400px;
     border-collapse: collapse;
     border: 0;
 }
 
 #field table td {
+    width: 100px;
+    height: 100px;
+    text-align: center;
+    font-size: 85px;
     border: 4px solid orange;
 }

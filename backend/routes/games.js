@@ -4,9 +4,6 @@ const express = require('express');
 const repository = require('../repository');
 const router = express.Router();
 
-// const app = express();
-// app.use(express.urlencoded({extended: true}));
-
 router.post('/new', (req, res) => {
     const userData = req.body;
     console.log(userData);
@@ -33,7 +30,8 @@ router.post('/new', (req, res) => {
         repository.insertIntoGameSessions({
             'accessToken': accessToken,
             'gameToken': gameToken,
-            'yourTurn': true
+            'userName': userData['userName'],
+            'yourTurn': true,
         });
 
         return res.send({
@@ -48,9 +46,6 @@ router.post('/new', (req, res) => {
 });
 
 router.get('/list', (req, res) => {
-    // TO DO
-    // Calculate game duration
-    // console.log(`[INFO] ${new Date()}: GET to /games/list`);
     repository.getGames()
     .then(
         results => {
@@ -58,7 +53,6 @@ router.get('/list', (req, res) => {
             let notActiveGames = [];
             for (let game of results) {
                 let gameDurationWihoutUpdate = new Date() - game['lastUpdate'];
-                console.log(gameDurationWihoutUpdate);
                 if (gameDurationWihoutUpdate < 300000) {
                     const item = {
                         'gameToken': game['gameToken'],
@@ -74,7 +68,6 @@ router.get('/list', (req, res) => {
                 else {
                     notActiveGames.push(game['gameToken']);
                 }
-                // console.log(notActiveGames);
                 if (notActiveGames.length != 0) {
                     repository.deleteNotActiveGames(notActiveGames);
                 }
@@ -103,11 +96,13 @@ router.post('/join', (req, res) => {
             console.log(`Result: ${data['state']}`);
             console.log(game['state']);
             if (game['state'] == 'playing') {
-                repository.joinToGameAsObserver(userData['gameToken'], accessToken);
+                repository.joinToGameAsObserver(userData['gameToken'], userData['userName'], accessToken);
             }
             else {
                 repository.joinToGameAsPlayer(userData['gameToken'], userData['userName'], accessToken);
             }
+
+            repository.updateLastActionTime(userData['gameToken']);
 
             res.json({
                 'status': 'OK',
@@ -124,29 +119,40 @@ router.post('/join', (req, res) => {
 
 router.post('/do_step', (req, res) => {
     // TO DO
-
     const accessToken = req.header('accessToken')
     console.log(accessToken);
     if (accessToken) {
         const userData = req.body;
         if ('row' in userData && 'col' in userData) {
             repository.getGameByPlayer(accessToken)
-            .then((results) => {
-                if (results) {
-                    const row = userData['row'];
-                    const col = userData['col'];
-                    gameField = JSON.parse(results['field']);
-                    gameField[row][col] = 'X';
-                    console.log(results);   
+            .then((game) => {
+                if (game) {
+                    repository.getPlayer(accessToken)
+                    .then((player) => {
+                        const row = +userData['row'];
+                        const col = +userData['col'];
+                        let gameField = JSON.parse(game['field']);
+                        let s = gameField[row];
+                        gameField[row] = s.slice(0, col) + player['yourSign'] + s.slice(col + 1);
+                        repository.updateGameField(game['gameToken'], JSON.stringify(gameField));
+                        //TO DO switchPlayer
+                        repository.switchActivePlayer(accessToken, game['gameToken']);
+                        repository.updateLastActionTime(game['gameToken']);
+                        res.json({
+                            'status': 'OK',
+                            'code': 0
+                        })
+                    });
                 }
-            })
-            return res.send('OK');
+            });
         }
-
-        return res.json(errorResponse(1, 'Invalid request'));
+        else {
+            res.json(errorResponse(1, 'Invalid request'));
+        }
     }
-
-    return res.json(errorResponse(3, `Not found accessToken in headers`));
+    else {
+        res.json(errorResponse(3, `Not found accessToken in headers`));
+    }
 });
 
 router.get('/state', (req, res) => {
@@ -162,12 +168,14 @@ router.get('/state', (req, res) => {
             const resData = {
                 'status': 'OK',
                 'code': 0,
-                'gameDuration': new Date() - result[0]['gameStart'],
-                'field': JSON.parse(result[0]['field'])
+                'yourTurn': result['yourTurn'],
+                'gameDuration': new Date() - result['gameStart'],
+                'owner': result['owner'],
+                'opponent': result['oppopent'],
+                'state': result['state'],
+                'field': JSON.parse(result['field'])
             }
-            // res.json(resData);
             res.json(resData);
-            // res.json(resData);
         },
         () => res.send(errorResponse(4, `Error with query at database`)));
     }
