@@ -22,3 +22,5 @@ app.use('/games', gamesRouter);
 const port = 8001;
 
 app.listen(port, () => console.log(`Example app listening on port ${port}!`));
+
+module.exports = app;

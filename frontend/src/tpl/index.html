@@ -14,7 +14,7 @@
             <div class="modal-content">
                 <form id="join-game-form" action="" method="post">
                     <input type="hidden" name="gameToken" id="gameToken">
-                    <input type="text" name="userName" id="userName" placeholder="username">
+                    <input type="text" name="userName" id="userName" placeholder="username" required>
                     <input type="button" value="join" id="join-game">
                 </form>
                 <span class="close">&times;</span>
@@ -29,8 +29,8 @@
         <!-- Modal content -->
         <div class="modal-content">
             <form id="new-game-form" action="">
-                <input id="userName" type="text" placeholder="username">
-                <input id="size" type="number" min="3" placeholder="size">
+                <input id="userName" type="text" maxlength="100" placeholder="username" required />
+                <input id="size" type="number" min="3" placeholder="size" required />
                 <input id="create-game" type="button" value="Create">
             </form>
             <span class="close">&times;</span>

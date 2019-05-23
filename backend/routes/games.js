@@ -6,7 +6,6 @@ const router = express.Router();
 
 router.post('/new', (req, res) => {
     const userData = req.body;
-    console.log(userData);
     if ('userName' in userData && 'size' in userData) {
         const accessToken = genUUID();
         const gameToken = genUUID();
@@ -83,18 +82,12 @@ router.get('/list', (req, res) => {
 });
 
 router.post('/join', (req, res) => {
-    // TO DO
-    // If two players already play the game, then only visitors
     const userData = req.body;
-    console.log(userData);
     if ('gameToken' in userData && 'userName' in userData) {
         const accessToken = genUUID();
-
         repository.getGameByGameToken(userData['gameToken'])
         .then((data) => {
             let game = data;
-            console.log(`Result: ${data['state']}`);
-            console.log(game['state']);
             if (game['state'] == 'playing') {
                 repository.joinToGameAsObserver(userData['gameToken'], userData['userName'], accessToken);
             }
@@ -102,7 +95,7 @@ router.post('/join', (req, res) => {
                 repository.joinToGameAsPlayer(userData['gameToken'], userData['userName'], accessToken);
             }
 
-            repository.updateLastActionTime(userData['gameToken']);
+            repository.updateGameData(userData['gameToken'], {lastUpdate: new Date()});
 
             res.json({
                 'status': 'OK',
@@ -118,9 +111,7 @@ router.post('/join', (req, res) => {
 });
 
 router.post('/do_step', (req, res) => {
-    // TO DO
     const accessToken = req.header('accessToken')
-    console.log(accessToken);
     if (accessToken) {
         const userData = req.body;
         if ('row' in userData && 'col' in userData) {
@@ -134,10 +125,30 @@ router.post('/do_step', (req, res) => {
                         let gameField = JSON.parse(game['field']);
                         let s = gameField[row];
                         gameField[row] = s.slice(0, col) + player['yourSign'] + s.slice(col + 1);
-                        repository.updateGameField(game['gameToken'], JSON.stringify(gameField));
-                        //TO DO switchPlayer
+                        repository.updateGameData(
+                            game['gameToken'], 
+                            {
+                                field: JSON.stringify(gameField),
+                                lastUpdate: new Date()
+                            }
+                        );
                         repository.switchActivePlayer(accessToken, game['gameToken']);
-                        repository.updateLastActionTime(game['gameToken']);
+                        let winner = checkWinner(gameField);
+                        switch (winner) {
+                            case 'owner':
+                                console.log('owner');
+                                // repo.endGame(owner, winnerUsername)
+                                break;
+                            case 'opponent':
+                                console.log('opponent');
+                                // repo.endGame(opponent, winnerUsername)
+                                break;
+                            case 'draw':
+                                console.log('draw');
+                                // repo.endGame(draw)
+                                break;
+                        }
+
                         res.json({
                             'status': 'OK',
                             'code': 0
@@ -156,22 +167,18 @@ router.post('/do_step', (req, res) => {
 });
 
 router.get('/state', (req, res) => {
-    // TO DO
     const accessToken = req.header('accessToken');
-    console.log(accessToken);
     if (accessToken) {
-        // TO DO
-        // repo.getState
-        console.log('done.');
         repository.getGameState(accessToken)
         .then((result) => {
+            // console.log(result);
             const resData = {
                 'status': 'OK',
                 'code': 0,
                 'yourTurn': result['yourTurn'],
                 'gameDuration': new Date() - result['gameStart'],
                 'owner': result['owner'],
-                'opponent': result['oppopent'],
+                'opponent': result['opponent'],
                 'state': result['state'],
                 'field': JSON.parse(result['field'])
             }
@@ -184,7 +191,61 @@ router.get('/state', (req, res) => {
     }
 });
 
-module.exports = router;
-
 const errorResponse = (code, msg) => { return {'status': 'error', 'code': code, 'message': msg}};
 const genUUID = () => uuid4();
+const checkWinner = (field) => {
+    const transpose = (field) => {
+        let transposeField = new Array(field.length);
+        transposeField.fill('');
+        for (let row of field) {
+            row = row.split('').reverse().join('');
+            for (let i = 0; i < row.length; i++) {
+                transposeField[i] += row[i];
+            }
+        }
+        return transposeField;
+    }
+
+    const checkHorizontalLine = (field) => {
+        for (let row of field) {
+            if (row === 'X'.repeat(row.length)) {
+                return 'owner'
+            }
+            if (row === '0'.repeat(row.length)) {
+                return 'opponent';
+            }
+        }
+        return '';
+    }
+
+    const getDiagonal = (field) => {
+        let mainDiagonal = '';
+        for (let i = 0; i < field.length; i++) {
+            mainDiagonal += field[i][i];
+        }
+        return [mainDiagonal];
+    }
+
+    let winner = checkHorizontalLine(field);
+    if (winner) return winner;
+
+    winner = checkHorizontalLine(transpose(field));
+    if (winner) return winner;
+
+    winner = checkHorizontalLine(getDiagonal(field));
+    if (winner) return winner;
+
+    winner = checkHorizontalLine(getDiagonal(transpose(field)));
+    if (winner) return winner;
+
+    for (let row of field) {
+        console.log(`row: ${row}`);
+        if (~row.indexOf('?')) {
+            console.log('done');
+            return '';
+        }
+    }
+    return 'draw';
+}
+
+module.exports = router;

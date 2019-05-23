@@ -2,8 +2,7 @@ $(document).ready(() => {
     displayGames();
     $('#games-list').on('click', '.game-info', (event) => {
         let el = event.currentTarget;
-        console.log(el);
-        if (!!el) {
+        if (el) {
             $('#join-game-modal').css('display', 'block');
             $('#join-game-modal #gameToken').val($(el).attr('id'));
             $('span.close').click(() => {
@@ -27,6 +26,7 @@ $(document).ready(() => {
 });
 
 const createNewGame = () => {
+    
     const userName = $('#new-game-form #userName').val();
     const size = $('#new-game-form #size').val();
     $.ajax({
@@ -40,10 +40,8 @@ const createNewGame = () => {
             size: size
         }),
         success: (data) => {
-            console.log(data);
             if (data.status == 'OK') {
                 document.cookie = `accessToken=${data.accessToken}`;
-                document.cookie = `userName=${userName}`;
                 window.location.href = '/game';
             }
         }
@@ -66,7 +64,6 @@ const joinToGame = () => {
             gameToken: gameToken
         }),
         success: (data) => {
-            console.log(data);
             if (data.status == 'OK') {
                 document.cookie = `accessToken=${data.accessToken}`;
                 document.cookie = `userName=${userName}`;

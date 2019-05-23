@@ -2,9 +2,14 @@
     "name": "frontend",
     "version": "0.1.0",
     "scripts": {
-        "start": "nodemon client.js"
+        "start": "node client.js",
+        "dev": "nodemon client.js",
+        "lint": "eslint src/js"
     },
     "devDependencies": {
+        "babel-eslint": "^10.0.1",
+        "eslint": "^5.16.0",
+        "eslint-plugin-react": "^7.13.0",
         "lite-server": "^2.2.1"
     },
     "dependencies": {

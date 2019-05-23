@@ -97,16 +97,6 @@ module.exports = {
     });
   },
 
-  updateGameField: (gameToken, updatedField) => {
-    connection.query(
-      `UPDATE games SET field = ? WHERE gameToken = ?`,
-      [updatedField, gameToken],
-      (error, result, fields) => {
-        if (error) throw error.sql;
-      }
-    );
-  },
-
   getGameState: (accessToken) => {
     return new Promise((resolve, reject) => {
       connection.query(
@@ -191,13 +181,13 @@ module.exports = {
     );
   },
 
-  updateLastActionTime: (gameToken) => {
+  updateGameData: (gameToken, data) => {
     connection.query(
-      `UPDATE games SET lastUpdate = ? WHERE gameToken = ?`,
-      [new Date(), gameToken],
+      `UPDATE games SET ? WHERE gameToken = ?`,
+      [data, gameToken],
       (error, result, fields) => {
         if (error) throw error;
       }
     )
-  }
+  },
 }

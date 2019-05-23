@@ -27,7 +27,6 @@ const getGameState = () => {
                     table += '<tr>';
                     for (let j = 0; j < data.field[i].length; j++) {
                         table += `<td row=${i} col=${j}>`
-                        console.log(`blabla: ${data.field[i]}`);
                         switch (data.field[i][j]) {
                             case '?':
                             table += '';
