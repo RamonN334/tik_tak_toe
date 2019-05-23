@@ -14,12 +14,7 @@ const getGameState = () => {
         success: (data) => {
             console.log(data);
             if (data.status == 'OK') {
-                if (data.state == 'ready') {
-                    $('#current-state span').text('Waiting for another player...');
-                }
-                else {
-                    $('#current-state span').text(data.yourTurn ? 'Your turn' : 'Move another player');
-                }
+                $('#current-state span').text(getCurrentStats(data));
                 $('#owner span').html(data.owner || '');
                 $('#opponent span').html(data.opponent || '');
                 let table = '<table>';
@@ -46,12 +41,12 @@ const getGameState = () => {
                 $('#field').html(table);
                 $('#field table').on('click', 'td', (event) => {
                     let td = event.currentTarget;
-                    let row = $(td).attr('row');
-                    let col = $(td).attr('col');
-                    console.log(data.state);
+                    let row = +$(td).attr('row');
+                    let col = +$(td).attr('col');
+                    console.log(typeof row);
+                    console.log(typeof col);
                     if (data.state == 'playing') {
                         doStep(row, col);
-                        console.log(`[${$(td).attr('row')}, ${$(td).attr('col')}]`);
                     }
                 });
             }
@@ -97,4 +92,20 @@ const getCookie = (name) => {
         return cookie[0].split('=')[1] || '';
     }
     return '';
+}
+
+const getCurrentStats = (data) => {
+    let currState = '';
+    switch(data.state) {
+        case 'ready':
+            currState = 'Waiting for another player...';
+            break;
+        case 'playing':
+            currState = data.yourTurn ? 'Your turn' : 'Move another player';
+            break;
+        case 'done':
+            currState = data.winner || 'draw';
+    }
+
+    return currState;
 }

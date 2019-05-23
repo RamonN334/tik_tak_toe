@@ -100,7 +100,7 @@ module.exports = {
   getGameState: (accessToken) => {
     return new Promise((resolve, reject) => {
       connection.query(
-        `SELECT g.owner, g.opponent, g.gameStart, g.gameResult, g.state, g.field, gs.yourTurn
+        `SELECT g.owner, g.opponent, g.gameStart, g.gameResult, g.state, g.winner, g.field, gs.yourTurn
         FROM games AS g
         JOIN gameSessions as gs ON g.gameToken = gs.gameToken
         WHERE gs.accessToken = ?`,

@@ -133,19 +133,39 @@ router.post('/do_step', (req, res) => {
                             }
                         );
                         repository.switchActivePlayer(accessToken, game['gameToken']);
-                        let winner = checkWinner(gameField);
-                        switch (winner) {
+                        let result = checkWinner(gameField);
+                        switch (result) {
                             case 'owner':
                                 console.log('owner');
-                                // repo.endGame(owner, winnerUsername)
+                                repository.updateGameData(
+                                    game['gameToken'], 
+                                    {
+                                        state: 'done', 
+                                        winner: game['owner'],
+                                        gameResult: result
+                                    }
+                                );
                                 break;
                             case 'opponent':
                                 console.log('opponent');
-                                // repo.endGame(opponent, winnerUsername)
+                                repository.updateGameData(
+                                    game['gameToken'], 
+                                    {
+                                        state: 'done', 
+                                        winner: game['opponent'],
+                                        gameResult: result
+                                    }
+                                );                             
                                 break;
                             case 'draw':
                                 console.log('draw');
-                                // repo.endGame(draw)
+                                repository.updateGameData(
+                                    game['gameToken'], 
+                                    {
+                                        state: 'done', 
+                                        gameResult: result
+                                    }
+                                );                                
                                 break;
                         }
 
@@ -180,6 +200,7 @@ router.get('/state', (req, res) => {
                 'owner': result['owner'],
                 'opponent': result['opponent'],
                 'state': result['state'],
+                'winner': result['winner'],
                 'field': JSON.parse(result['field'])
             }
             res.json(resData);
