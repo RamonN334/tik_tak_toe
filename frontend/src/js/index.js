@@ -1,3 +1,5 @@
+// import msToTime from './timeConverter'
+
 $(document).ready(() => {
     displayGames();
     $('#games-list').on('click', '.game-info', (event) => {
@@ -14,11 +16,10 @@ $(document).ready(() => {
                     $('#join-game-modal').css('display', 'none');
                 }
             });
-            // addEventToModal('join-game-modal', $(el).attr('id'));
         }
     });
 
-    addEventToModal('new-game-modal', 'myBtn');
+    addEventToModal('new-game-modal', 'new-game');
 
     $('#join-game-modal #join-game').click(joinToGame);
     $('#create-game').click(createNewGame);
@@ -84,9 +85,23 @@ const displayGames = () => {
             $.each(games, (_, item) => {
                 let gameDiv = '';
                 gameDiv += `<div id=${item.gameToken} class="game-info">`;
-                gameDiv += `<div class="owner"><span>${item.owner}</span><span class="winner"></span></div>`;
+                if (item.gameResult == 'owner') {
+                    gameDiv += `<div class="owner winner"><span>${item.owner}</span>`;
+                    gameDiv += `<span class="check-mark">&#10004;</span>`;
+                }
+                else {
+                    gameDiv += `<div class="owner"><span>${item.owner}</span>`;
+                }
+                gameDiv += `</div>`;
                 gameDiv += '<hr>';
-                gameDiv += `<div class="opponent"><span>${item.opponent || ''}</span><span class="winner"></span></div>`;
+                if (item.gameResult == 'opponent') {
+                    gameDiv += `<div class="opponent winner"><span>${item.opponent || ''}`;
+                    gameDiv += `<span class="check-mark">&#10004;</span>`;
+                }
+                else {
+                    gameDiv += `<div class="opponent"><span>${item.opponent || ''}`;
+                }
+                gameDiv += `</div>`;
                 gameDiv += `<div class="size"><span>${item.size}x${item.size}</span></div>`
                 gameDiv += `<div class="game-duration"><span>${msToTime(item.gameDuration)}</span></div>`
                 gameDiv += '</div>';
@@ -95,18 +110,6 @@ const displayGames = () => {
             $('#games-list').html(gameDivs);
         }
     });
-}
-
-const msToTime = duration => {
-    let seconds = parseInt((duration / 1000) % 60),
-        minutes = parseInt((duration / (1000 * 60)) % 60),
-        hours = parseInt((duration / (1000 * 60 * 60)) % 24);
-
-    hours = (hours < 10) ? "0" + hours : hours;
-    minutes = (minutes < 10) ? "0" + minutes : minutes;
-    seconds = (seconds < 10) ? "0" + seconds : seconds;
-
-    return hours + ":" + minutes + ":" + seconds;
 }
 
 const addEventToModal = (modalId, clickedElementId) => {
@@ -126,4 +129,16 @@ const addEventToModal = (modalId, clickedElementId) => {
             modal.css('display', 'none');
         }
     });
+}
+
+const msToTime = duration => {
+    let seconds = parseInt((duration / 1000) % 60),
+        minutes = parseInt((duration / (1000 * 60)) % 60),
+        hours = parseInt((duration / (1000 * 60 * 60)) % 24);
+
+    hours = (hours < 10) ? "0" + hours : hours;
+    minutes = (minutes < 10) ? "0" + minutes : minutes;
+    seconds = (seconds < 10) ? "0" + seconds : seconds;
+
+    return hours + ":" + minutes + ":" + seconds;
 }

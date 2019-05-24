@@ -1,30 +1,24 @@
 const mysql = require('mysql')
-const connection = mysql.createConnection({
-  host: 'db',
-  user: 'test_user',
-  password: 'test_user',
-  database: 'ttt_db'
-})
+const config = require('config')
+const connection = mysql.createConnection(config.dbConfig);
 
 module.exports = {
-  insertIntoGames: (data) => {
+  createGame: (data) => {
     connection.query(
       `INSERT INTO games SET ?`, 
       data, 
       (error, results, fields) => {
         if (error) throw error;
-        console.log(results.affectedRows);
       }
     );
   },
 
-  insertIntoGameSessions: (data) => {
+  createGameSession: (data) => {
     connection.query(
       `INSERT INTO gameSessions SET ?`, 
       data, 
       (error, results, fields) => {
         if (error) throw error;
-        console.log(results.affectedRows);
       }
     );
   },
@@ -42,15 +36,14 @@ module.exports = {
   },
 
   getGameByPlayer: (accessToken) => {
-    console.log(accessToken);
     return new Promise((resolve, reject) => {
       connection.query(
         `SELECT * FROM games 
         JOIN gameSessions AS gs ON games.gameToken = gs.gameToken AND gs.accessToken = ?`,
         [accessToken],
-        (error, result, fields) => {
+        (error, results, fields) => {
           if (error) throw error;
-          resolve(result[0]);
+          resolve(results);
         }
       );
     });
@@ -61,25 +54,25 @@ module.exports = {
       connection.query(
         `SELECT * FROM gameSessions WHERE accessToken = ?`,
         [accessToken],
-        (error, result, fields) => {
+        (error, results, fields) => {
           if (error) throw error;
-          resolve(result[0]);
+          resolve(results);
         }
       );
     });
   },
 
   joinToGameAsPlayer: (gameToken, userName, accessToken) => {
-    connection.query(
-      `UPDATE games SET opponent = ?, lastUpdate = ?, state = "playing" WHERE gameToken = ?`, 
-      [userName, new Date(), gameToken], 
-      (error, results, fields) => {
-        if (error) throw error;
-        console.log(results.affectedRows);
+    module.exports.updateGameData(
+      gameToken,
+      {
+        opponent: userName,
+        lastUpdate: new Date(),
+        state: 'playing'
       }
     );
 
-    module.exports.insertIntoGameSessions({
+    module.exports.createGameSession({
       'accessToken': accessToken,
       'gameToken': gameToken,
       'userName': userName,
@@ -88,7 +81,7 @@ module.exports = {
   },
 
   joinToGameAsObserver: (gameToken, userName, accessToken) => {
-    module.exports.insertIntoGameSessions({
+    module.exports.createGameSession({
       'accessToken': accessToken,
       'gameToken': gameToken,
       'userName': userName,
@@ -105,9 +98,9 @@ module.exports = {
         JOIN gameSessions as gs ON g.gameToken = gs.gameToken
         WHERE gs.accessToken = ?`,
         [accessToken],
-        (error, result, fields) => {
+        (error, results, fields) => {
           if (error) throw error;
-          resolve(result[0]);
+          resolve(results);
         }
       )
     });
@@ -119,12 +112,32 @@ module.exports = {
         `SELECT * FROM games
         WHERE gameToken = ?`,
         [gameToken],
-        (error, result, fields) => {
+        (error, results, fields) => {
           if (error) throw error;
-          resolve(result[0]);
+          resolve(results);
         }
       )
     });
+  },
+
+  updateGameData: (gameToken, data) => {
+    connection.query(
+      `UPDATE games SET ? WHERE gameToken = ?`,
+      [data, gameToken],
+      (error, results, fields) => {
+        if (error) throw error;
+      }
+    )
+  },
+
+  updateGameSession: (accessToken, data) => {
+    connection.query(
+      `UPDATE gameSessions SET ? WHERE accessToken = ?`
+    ),
+    [data, accessToken],
+    (error, results, fields) => {
+      if (error) throw error;
+    }
   },
 
   deleteGameByGameToken: (gameToken) => {
@@ -132,9 +145,9 @@ module.exports = {
       connection.query(
         `DELETE FROM games WHERE gameToken = ?`,
         [gameToken],
-        (error, result, fields) => {
+        (error, results, fields) => {
           if (error) throw error;
-          resolve(result);
+          resolve(results);
         }
       );
     })
@@ -146,21 +159,8 @@ module.exports = {
         [gameTokens],
         (error, results, fields) => {
           if (error) throw error;
-          console.log(`Deleted ${results.affectedRows} rows`);
         }
       );
-
-      console.log(query.sql);
-  },
-
-  updateGameSession: (accessToken, data) => {
-    connection.query(
-      `UPDATE gameSessions SET ? WHERE accessToken = ?`
-    ),
-    [data, accessToken],
-    (error, result, fields) => {
-      if (error) throw error;
-    }
   },
 
   switchActivePlayer: (activePlayerAccessToken, gameToken) => {
@@ -181,13 +181,12 @@ module.exports = {
     );
   },
 
-  updateGameData: (gameToken, data) => {
-    connection.query(
-      `UPDATE games SET ? WHERE gameToken = ?`,
-      [data, gameToken],
-      (error, result, fields) => {
-        if (error) throw error;
-      }
-    )
-  },
+  clearDB: () => {
+    connection.query('DELETE FROM games'), {}, (error, results, fields) => {
+      if (error) throw error;
+    };
+    // connection.query('DELETE FROM gameSessions'), {}, (error, results, fields) => {
+    //   if (error) throw error;
+    // }
+  }
 }

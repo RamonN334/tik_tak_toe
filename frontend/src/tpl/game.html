@@ -4,19 +4,21 @@
         <link rel="stylesheet" href="/styles/main.css" type="text/css">
         <link rel="stylesheet" href="/styles/partials/game.css" type="text/css">
         <script src="http://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+        <!-- <script src="../js/timeConverter.js"></script> -->
         <script src="/js/views/game.js"></script>
     </head>
     <body>
         <div class="wrapper">
             <div id="game-stat">
-                <div id="owner"><span></span></div>
+                <div id="owner"><span class="player-username"></span><span class="player-sign"><img src="../img/cross.jpg"></span></div>
                 <div id="current-state"><span></span></div>
-                <div id="opponent"><span></span></div>
+                <div id="opponent"><span class="player-sign"><img src="../img/circle.jpg"><span class="player-username"></span></span></div>
             </div>
             <div id="field"></div>
             <div id="footer-panel">
-                <div id="action-btn"></div>
-            </div>>
+                <div id="game-time-duration"></div>
+                <div id="action-btn" class="btn"><span></span></div>
+            </div>
         </div>
     </body>
 </html>

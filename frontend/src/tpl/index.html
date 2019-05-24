@@ -2,38 +2,44 @@
 <html>
     <head>
         <link rel="stylesheet" href="../styles/main.css" type="text/css">
+        <link rel="stylesheet" href="../styles/partials/gameList.css" type="text/css">
         <script src="http://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+        <!-- <script src="../js/timeConverter.js"></script> -->
+        <script src="../js/index.js"></script>
     </head>
     <body>
-        <script src="../js/index.js"></script>
         <div id="wrapper">
             <div id="games-list"></div>
         </div>
 
         <div id="join-game-modal" class="modal">
             <div class="modal-content">
-                <form id="join-game-form" action="" method="post">
-                    <input type="hidden" name="gameToken" id="gameToken">
-                    <input type="text" name="userName" id="userName" placeholder="username" required>
-                    <input type="button" value="join" id="join-game">
-                </form>
                 <span class="close">&times;</span>
+                <div class="form-wrapper">
+                    <form id="join-game-form" action="" method="post">
+                        <input type="hidden" name="gameToken" id="gameToken">
+                        <input type="text" name="userName" id="userName" placeholder="username" required>
+                        <input type="button" class="btn" value="join" id="join-game">
+                    </form>
+                </div>
             </div>
         </div>
 
-        <div id="myBtn"></div>
+        <div id="new-game" class="btn"><span>New game</span></div>
 
         <!-- The Modal -->
         <div id="new-game-modal" class="modal">
 
         <!-- Modal content -->
         <div class="modal-content">
-            <form id="new-game-form" action="">
-                <input id="userName" type="text" maxlength="100" placeholder="username" required />
-                <input id="size" type="number" min="3" placeholder="size" required />
-                <input id="create-game" type="button" value="Create">
-            </form>
             <span class="close">&times;</span>
+            <div class="form-wrapper">
+                <form id="new-game-form" action="">
+                    <input id="userName" type="text" maxlength="100" placeholder="username" required />
+                    <input id="size" type="number" min="3" placeholder="size" required />
+                    <input id="create-game" class="btn" type="button" value="Create">
+                </form>
+            </div>
         </div>
 
         </div>

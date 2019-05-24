@@ -4,6 +4,10 @@
     margin-bottom: 20px;
 }
 
+#game-stat {
+    font-size: 30px;
+}
+
 #game-stat > div {
     display: inline-block;
     vertical-align: middle;
@@ -13,6 +17,10 @@
 #game-stat #owner,
 #game-stat #opponent {
     width: 20%;
+}
+
+#game-stat #opponent {
+    width: 19%;
 }
 
 #game-stat #owner {
@@ -40,4 +48,25 @@
     text-align: center;
     font-size: 85px;
     border: 4px solid orange;
+}
+
+#footer-panel {
+    width: 100%;
+    height: 80px;
+    text-align: center;
+    line-height: 80px;
+}
+
+#footer-panel #game-time-duration {
+    font-size: 25px;
+    color: grey;
+} 
+
+#action-btn {
+    margin: auto;
+}
+
+.player-sign img {
+    width: 50px;
+    height: 50px;
 }

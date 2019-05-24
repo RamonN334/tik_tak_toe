@@ -1,33 +1,69 @@
-$(document).ready(() => {
-
-});
-
-const displayGames = () => {
-    let gameDivs = [];
-    $.getJSON('/games/list', (data) => {
-        let games = data['games'];
-        $.each(games, (_, item) => {
-            let gameDiv = '';
-            gameDiv += '<div class="game-info">';
-            gameDiv += `<div class="owner"><span>${item.owner}</span><span class="winner"></span></div>`;
-            gameDiv += '<hr>';
-            gameDiv += `<div class="opponent"><span>${item.opponent || ''}</span><span class="winner"></span></div>`;
-            gameDiv += `<div class="game-duration"><span>${msToTime(item.gameDuration)}</span></div>`
-            gameDiv += '</div>';
-            gameDivs.push(gameDiv);
-        });
-        $('#games-list').html(gameDivs);
-    })
+export const createNewGame = () => {  
+    const userName = $('#new-game-form #userName').val();
+    const size = $('#new-game-form #size').val();
+    $.ajax({
+        method: 'POST',
+        url: 'http://localhost:8001/games/new',
+        contentType: 'application/json',
+        crossDomain: true,
+        processData: false,
+        data: JSON.stringify({
+            userName: userName,
+            size: size
+        }),
+        success: (data) => {
+            if (data.status == 'OK') {
+                document.cookie = `accessToken=${data.accessToken}`;
+                window.location.href = '/game';
+            }
+        }
+    });
 }
 
-const msToTime = duration => {
-    let seconds = parseInt((duration / 1000) % 60),
-        minutes = parseInt((duration / (1000 * 60)) % 60),
-        hours = parseInt((duration / (1000 * 60 * 60)) % 24);
+export const joinToGame = () => {
+    let gameToken = $('#join-game-form #gameToken').val();
+    let userName = $('#join-game-form #userName').val();
 
-    hours = (hours < 10) ? "0" + hours : hours;
-    minutes = (minutes < 10) ? "0" + minutes : minutes;
-    seconds = (seconds < 10) ? "0" + seconds : seconds;
+    $.ajax({
+        method: 'POST',
+        url: 'http://localhost:8001/games/join',
+        contentType: 'application/json',
+        crossDomain: true,
+        processData: false,
+        data: JSON.stringify({
+            userName: userName,
+            gameToken: gameToken
+        }),
+        success: (data) => {
+            if (data.status == 'OK') {
+                document.cookie = `accessToken=${data.accessToken}`;
+                document.cookie = `userName=${userName}`;
+                window.location.href = '/game';
+            }
+        }
+    });
+}
 
-    return hours + ":" + minutes + ":" + seconds;
+export const displayGames = () => {
+    let gameDivs = [];
+    $.ajax({
+        url: 'http://localhost:8001/games/list',
+        contentType: 'application/json',
+        crossDomain: true,
+        success: (data) => {
+            let games = data['games'];
+            $.each(games, (_, item) => {
+                let gameDiv = '';
+                gameDiv += `<div id=${item.gameToken} class="game-info">`;
+                gameDiv += `<div class="owner"><span>${item.owner}</span><span class="winner"></span></div>`;
+                gameDiv += '<hr>';
+                gameDiv += `<div class="opponent"><span>${item.opponent || ''}</span><span class="winner"></span></div>`;
+                gameDiv += `<div class="size"><span>${item.size}x${item.size}</span></div>`
+                gameDiv += `<div class="game-duration"><span>${msToTime(item.gameDuration)}</span></div>`
+                gameDiv += '</div>';
+                gameDivs.push(gameDiv);
+            });
+            $('#games-list').html(gameDivs);
+        }
+    });
 }

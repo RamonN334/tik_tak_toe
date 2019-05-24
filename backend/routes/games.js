@@ -7,13 +7,16 @@ const router = express.Router();
 router.post('/new', (req, res) => {
     const userData = req.body;
     if ('userName' in userData && 'size' in userData) {
+        if (!userData['userName']) return res.json(errorResponse(5, 'UserName field is empty'));
+        if (!isNumeric(userData['size'])) return res.json(errorResponse(5, 'Size field is not valid'));
+        if (+userData['size'] < 3) return res.json(errorResponse(5, 'Size value is less than 3'));
+
         const accessToken = genUUID();
         const gameToken = genUUID();
 
-        console.log(req.body);
         let newGame = {
             'owner': userData['userName'],
-            'size': userData['size'],
+            'size': +userData['size'],
             'gameStart': new Date(),
             'lastUpdate': new Date(),      
             'gameToken': gameToken,
@@ -25,23 +28,22 @@ router.post('/new', (req, res) => {
             gameField.push('?'.repeat(newGame['size']));
         }
         newGame['field'] = JSON.stringify(gameField);
-        repository.insertIntoGames(newGame);
-        repository.insertIntoGameSessions({
+        repository.createGame(newGame);
+        repository.createGameSession({
             'accessToken': accessToken,
             'gameToken': gameToken,
             'userName': userData['userName'],
             'yourTurn': true,
         });
 
-        return res.send({
+        return res.json({
             'status': 'OK',
             'code': 0,
             'accessToken': accessToken,
             'gameToken': gameToken
         });
     }
-
-    return res.send(errorResponse(1, 'Invalid request'));
+    else return res.json(errorResponse(1, 'Invalid request'));
 });
 
 router.get('/list', (req, res) => {
@@ -77,17 +79,20 @@ router.get('/list', (req, res) => {
                 'games': transformedResults
             });
         },
-        () => res.send(errorResponse(2, `Don't succeed to get games list`))
+        () => { return res.send(errorResponse(2, 'Don\'t succeed to get games list')); }
     );
 });
 
 router.post('/join', (req, res) => {
     const userData = req.body;
     if ('gameToken' in userData && 'userName' in userData) {
+        if (!userData['gameToken']) return res.json(errorResponse(5, 'GameToken field is empty'));
+        if (!userData['userName']) return res.json(errorResponse(5, 'UserName field is empty'));
         const accessToken = genUUID();
         repository.getGameByGameToken(userData['gameToken'])
         .then((data) => {
-            let game = data;
+            if (data.length == 0) return res.json(errorResponse(2, 'Not found active game'));
+            let game = data[0];
             if (game['state'] == 'playing') {
                 repository.joinToGameAsObserver(userData['gameToken'], userData['userName'], accessToken);
             }
@@ -97,17 +102,14 @@ router.post('/join', (req, res) => {
 
             repository.updateGameData(userData['gameToken'], {lastUpdate: new Date()});
 
-            res.json({
+            return res.json({
                 'status': 'OK',
                 'code': 0,
                 'accessToken': accessToken
             });
         });
     }
-    else {
-        res.json(errorResponse(1, 'Invalid request'));
-    }
-
+    else return res.json(errorResponse(1, 'Invalid request'));
 });
 
 router.post('/do_step', (req, res) => {
@@ -115,104 +117,103 @@ router.post('/do_step', (req, res) => {
     if (accessToken) {
         const userData = req.body;
         if ('row' in userData && 'col' in userData) {
-            repository.getGameByPlayer(accessToken)
-            .then((game) => {
-                if (game) {
-                    repository.getPlayer(accessToken)
-                    .then((player) => {
-                        const row = +userData['row'];
-                        const col = +userData['col'];
-                        let gameField = JSON.parse(game['field']);
-                        let s = gameField[row];
-                        gameField[row] = s.slice(0, col) + player['yourSign'] + s.slice(col + 1);
-                        repository.updateGameData(
-                            game['gameToken'], 
-                            {
-                                field: JSON.stringify(gameField),
-                                lastUpdate: new Date()
-                            }
-                        );
-                        repository.switchActivePlayer(accessToken, game['gameToken']);
-                        let result = checkWinner(gameField);
-                        switch (result) {
-                            case 'owner':
-                                console.log('owner');
-                                repository.updateGameData(
-                                    game['gameToken'], 
-                                    {
-                                        state: 'done', 
-                                        winner: game['owner'],
-                                        gameResult: result
-                                    }
-                                );
-                                break;
-                            case 'opponent':
-                                console.log('opponent');
-                                repository.updateGameData(
-                                    game['gameToken'], 
-                                    {
-                                        state: 'done', 
-                                        winner: game['opponent'],
-                                        gameResult: result
-                                    }
-                                );                             
-                                break;
-                            case 'draw':
-                                console.log('draw');
-                                repository.updateGameData(
-                                    game['gameToken'], 
-                                    {
-                                        state: 'done', 
-                                        gameResult: result
-                                    }
-                                );                                
-                                break;
-                        }
+            if (!isNumeric(userData['row'])) return res.json(errorResponse(5, 'Row value is not valid'));
+            if (!isNumeric(userData['col'])) return res.json(errorResponse(5, 'Col value is not valid'));
 
-                        res.json({
-                            'status': 'OK',
-                            'code': 0
-                        })
+            repository.getGameByPlayer(accessToken)
+            .then((foundGames) => {
+                if (foundGames.length == 0) return res.json(errorResponse(2, 'Not found active game'));
+                repository.getPlayer(accessToken)
+                .then((foundPlayers) => {
+                    if (foundPlayers.length == 0) return res.json(errorResponse(2, 'Not found player'));
+                    const game = foundGames[0];
+                    const player = foundPlayers[0];
+                    const row = +userData['row'];
+                    const col = +userData['col'];
+                    let gameField = JSON.parse(game['field']);
+                    let s = gameField[row];
+                    gameField[row] = s.slice(0, col) + player['yourSign'] + s.slice(col + 1);
+                    repository.updateGameData(
+                        game['gameToken'], 
+                        {
+                            field: JSON.stringify(gameField),
+                            lastUpdate: new Date()
+                        }
+                    );
+                    repository.switchActivePlayer(accessToken, game['gameToken']);
+                    let result = checkWinner(gameField);
+                    switch (result) {
+                        case 'owner':
+                            repository.updateGameData(
+                                game['gameToken'], 
+                                {
+                                    state: 'done', 
+                                    winner: game['owner'],
+                                    gameResult: result
+                                }
+                            );
+                            break;
+                        case 'opponent':
+                            repository.updateGameData(
+                                game['gameToken'], 
+                                {
+                                    state: 'done', 
+                                    winner: game['opponent'],
+                                    gameResult: result
+                                }
+                            );                             
+                            break;
+                        case 'draw':
+                            repository.updateGameData(
+                                game['gameToken'], 
+                                {
+                                    state: 'done', 
+                                    gameResult: result
+                                }
+                            );                                
+                            break;
+                    }
+
+                    return res.json({
+                        'status': 'OK',
+                        'code': 0
                     });
-                }
+                });
             });
         }
-        else {
-            res.json(errorResponse(1, 'Invalid request'));
-        }
+        else return res.json(errorResponse(1, 'Invalid request'));
     }
-    else {
-        res.json(errorResponse(3, `Not found accessToken in headers`));
-    }
+    else return res.json(errorResponse(3, `Not found accessToken in headers`));
 });
 
 router.get('/state', (req, res) => {
     const accessToken = req.header('accessToken');
     if (accessToken) {
         repository.getGameState(accessToken)
-        .then((result) => {
-            // console.log(result);
+        .then((results) => {
+            if (results.length == 0) return res.json(errorResponse(2, 'Not found active game'));
+            const state = results[0];
             const resData = {
                 'status': 'OK',
                 'code': 0,
-                'yourTurn': result['yourTurn'],
-                'gameDuration': new Date() - result['gameStart'],
-                'owner': result['owner'],
-                'opponent': result['opponent'],
-                'state': result['state'],
-                'winner': result['winner'],
-                'field': JSON.parse(result['field'])
+                'yourTurn': state['yourTurn'],
+                'gameDuration': new Date() - state['gameStart'],
+                'owner': state['owner'],
+                'opponent': state['opponent'],
+                'state': state['state'],
+                'winner': state['winner'],
+                'field': JSON.parse(state['field'])
             }
             res.json(resData);
         },
-        () => res.send(errorResponse(4, `Error with query at database`)));
+        () => { return res.json(errorResponse(4, `Error with query at database`)); }
+        )
     }
-    else {
-        res.send(errorResponse(3, `Not found accessToken in headers`));
-    }
+    else return res.json(errorResponse(3, `Not found accessToken in headers`));
 });
 
-const errorResponse = (code, msg) => { return {'status': 'error', 'code': code, 'message': msg}};
+const isNumeric = (n) => {return !isNaN(parseFloat(n)) && isFinite(n);};
+const errorResponse = (code, msg) => {return {'status': 'error', 'code': code, 'message': msg}};
 const genUUID = () => uuid4();
 const checkWinner = (field) => {
     const transpose = (field) => {
@@ -260,9 +261,7 @@ const checkWinner = (field) => {
     if (winner) return winner;
 
     for (let row of field) {
-        console.log(`row: ${row}`);
         if (~row.indexOf('?')) {
-            console.log('done');
             return '';
         }
     }

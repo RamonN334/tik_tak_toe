@@ -1,5 +1,8 @@
+// import msToTime from '../timeConverter'
+'use strict';
 $(document).ready(() => {
     getGameState();
+    $('#action-btn').click(backToMainPage);
     setInterval(getGameState, 2000);
 });
 
@@ -12,11 +15,8 @@ const getGameState = () => {
             'accessToken': getCookie('accessToken')
         },
         success: (data) => {
-            console.log(data);
             if (data.status == 'OK') {
-                $('#current-state span').text(getCurrentStats(data));
-                $('#owner span').html(data.owner || '');
-                $('#opponent span').html(data.opponent || '');
+                getCurrentStats(data);
                 let table = '<table>';
                 for (let i = 0; i < data.field.length; i++) {
                     table += '<tr>';
@@ -27,10 +27,10 @@ const getGameState = () => {
                             table += '';
                             break;
                             case 'X':
-                            table += '<img src="../img/cross.jpg" width="100" height="auto">';
+                            table += '<img src="../img/cross.jpg" width="60" height="auto">';
                             break;
                             case '0':
-                            table += '<img src="../img/circle.jpg" width="100" height="auto">';
+                            table += '<img src="../img/circle.jpg" width="60" height="auto">';
                             break;
                         }
                         table += `</td>`;
@@ -43,8 +43,6 @@ const getGameState = () => {
                     let td = event.currentTarget;
                     let row = +$(td).attr('row');
                     let col = +$(td).attr('col');
-                    console.log(typeof row);
-                    console.log(typeof col);
                     if (data.state == 'playing') {
                         doStep(row, col);
                     }
@@ -52,6 +50,10 @@ const getGameState = () => {
             }
         }
     })
+}
+
+const backToMainPage = () => {
+    window.location.href = '/';
 }
 
 const doStep = (row, col) => {
@@ -96,16 +98,35 @@ const getCookie = (name) => {
 
 const getCurrentStats = (data) => {
     let currState = '';
+    let actionBtnText = ''
     switch(data.state) {
         case 'ready':
             currState = 'Waiting for another player...';
             break;
         case 'playing':
             currState = data.yourTurn ? 'Your turn' : 'Move another player';
+            actionBtnText = 'Surrender';
             break;
         case 'done':
             currState = data.winner || 'draw';
+            actionBtnText = 'Back';
     }
 
-    return currState;
+    $('#owner span.player-username').html(data.owner || '');
+    $('#opponent span.player-username').html(data.opponent || '');
+    $('#game-time-duration').text(msToTime(data.gameDuration));
+    $('#current-state span').text(currState);
+    $('#action-btn span').text(actionBtnText);
+}
+
+const msToTime = duration => {
+    let seconds = parseInt((duration / 1000) % 60),
+        minutes = parseInt((duration / (1000 * 60)) % 60),
+        hours = parseInt((duration / (1000 * 60 * 60)) % 24);
+
+    hours = (hours < 10) ? "0" + hours : hours;
+    minutes = (minutes < 10) ? "0" + minutes : minutes;
+    seconds = (seconds < 10) ? "0" + seconds : seconds;
+
+    return hours + ":" + minutes + ":" + seconds;
 }
