@@ -175,7 +175,7 @@ describe('/games', () => {
     });
 
     describe('/GET /games/state', () => {
-        it('it should be GET current state of game', (done) => {
+        it('it should be GET current game state', (done) => {
             let data = {'userName': 'Igor', 'size': '3'}
             chai.request(server)
             .post('/games/new')
@@ -195,6 +195,39 @@ describe('/games', () => {
                     res.body.should.have.property('winner');
                     done();
                 });
+            });
+        });
+
+        it('it should not GET current game state cause by missing accessToken in headers', (done) => {
+            let data = {'userName': 'Igor', 'size': '3'}
+            chai.request(server)
+            .post('/games/new')
+            .send(data)
+            .end((err, res) => {
+                chai.request(server)
+                .get('/games/state')
+                .end((err, res) => {
+                    res.should.be.status(200);
+                    res.body.should.be.a('object');
+                    res.body.should.have.property('status').eql('error');
+                    res.body.should.have.property('code').eql(3);
+                    res.body.should.have.property('message').eql('Not found accessToken in headers');
+                    done();
+                });
+            });
+        });
+
+        it('it should not GET current game state cause by no active game for this accesTtoken', (done) => {
+            chai.request(server)
+            .get('/games/state')
+            .set('accessToken', 'b3f78f60-e87f-44e8-8bbf-9c3841b830e0')
+            .end((err, res) => {
+                res.should.be.status(200);
+                res.body.should.be.a('object');
+                res.body.should.have.property('status').eql('error');
+                res.body.should.have.property('code').eql(2);
+                res.body.should.have.property('message').eql('Not found active game');
+                done();
             });
         });
     });
