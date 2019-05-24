@@ -10,7 +10,7 @@ const should = chai.should();
 
 chai.use(chaiHttp);
 
-describe('Database', () => {
+describe('/games', () => {
     beforeEach((done) => {
         repo.clearDB();
         done();
@@ -53,6 +53,22 @@ describe('Database', () => {
     describe('/POST /games/new', () => {
         it('it should POST create new game', (done) => {
             let data = {'userName': 'Igor', 'size': 3};
+            chai.request(server)
+            .post('/games/new')
+            .send(data)
+            .end((err, res) => {
+                res.should.have.status(200);
+                res.body.should.be.a('object');
+                res.body.should.have.property('status').eql('OK');
+                res.body.should.have.property('code').eql(0);
+                res.body.should.have.property('accessToken').not.eql('');
+                res.body.should.have.property('gameToken').not.eql('');
+                done();
+            });
+        });
+
+        it('it should POST create new game with size value is more than 3', (done) => {
+            let data = {'userName': 'Igor', 'size': 5};
             chai.request(server)
             .post('/games/new')
             .send(data)
@@ -157,4 +173,47 @@ describe('Database', () => {
             });
         });
     });
+
+    describe('/GET /games/state', () => {
+        it('it should be GET current state of game', (done) => {
+            let data = {'userName': 'Igor', 'size': '3'}
+            chai.request(server)
+            .post('/games/new')
+            .send(data)
+            .end((err, res) => {
+                chai.request(server)
+                .get('/games/state')
+                .set('accessToken', res.body.accessToken)
+                .end((err, res) => {
+                    res.should.be.status(200);
+                    res.body.should.be.a('object');
+                    res.body.should.have.property('status').eql('OK');
+                    res.body.should.have.property('code').eql(0);
+                    res.body.should.have.property('yourTurn');
+                    res.body.should.have.property('gameDuration');
+                    res.body.should.have.property('field');
+                    res.body.should.have.property('winner');
+                    done();
+                });
+            });
+        });
+    });
+
+    // describe('/POST /games/join', () => {
+    //     it('it should be POST join to active game as player', (done) => {
+    //         let data = {'userName': 'Igor', 'size': '3'};
+    //         chai.request(server)
+    //         .post('/games/new')
+    //         .send(data)
+    //         .end((err, res) => {
+    //             let player = {'gameToken': res.body.gameToken, 'userName': 'Ivan'};
+    //             chai.request(server)
+    //             .post('games/join')
+    //             .send(player)
+    //             .end((err, res) => {
+    //                 chai.request(server)
+    //             });
+    //         })
+    //     });
+    // });
 });
