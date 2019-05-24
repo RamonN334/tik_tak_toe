@@ -40,6 +40,10 @@ Authetintification data for database access:
 ```
 
 # To run tests
+Run docker container with database:
+```bash
+docker-compose up -d db
+```
 Go to the backend directory:
 ```bash
 cd backend

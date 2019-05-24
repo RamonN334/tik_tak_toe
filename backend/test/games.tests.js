@@ -29,6 +29,25 @@ describe('Database', () => {
                 done();
             });
         });
+
+        it('it should GET all active games', (done) => {
+            let data = {'userName': 'Igor', 'size': '3'};
+            chai.request(server)
+            .post('/games/new')
+            .send(data)
+            .end((err, res) => {
+                chai.request(server)
+                .get('/games/list')
+                .end((err, res) => {
+                    res.should.have.status(200);
+                    res.body.should.be.a('object');
+                    res.body.should.have.property('status').eql('OK');
+                    res.body.should.have.property('code').eql(0);
+                    res.body.should.have.property('games').to.have.length(1);
+                    done();
+            });
+            })
+        });
     });
 
     describe('/POST /games/new', () => {
