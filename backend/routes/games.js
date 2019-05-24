@@ -98,9 +98,8 @@ router.post('/join', (req, res) => {
             }
             else {
                 repository.joinToGameAsPlayer(userData['gameToken'], userData['userName'], accessToken);
+                repository.updateGameData(userData['gameToken'], {state: 'playing', lastUpdate: new Date()});
             }
-
-            repository.updateGameData(userData['gameToken'], {lastUpdate: new Date()});
 
             return res.json({
                 'status': 'OK',

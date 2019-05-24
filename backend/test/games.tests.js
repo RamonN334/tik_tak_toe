@@ -232,21 +232,68 @@ describe('/games', () => {
         });
     });
 
-    // describe('/POST /games/join', () => {
-    //     it('it should be POST join to active game as player', (done) => {
-    //         let data = {'userName': 'Igor', 'size': '3'};
-    //         chai.request(server)
-    //         .post('/games/new')
-    //         .send(data)
-    //         .end((err, res) => {
-    //             let player = {'gameToken': res.body.gameToken, 'userName': 'Ivan'};
-    //             chai.request(server)
-    //             .post('games/join')
-    //             .send(player)
-    //             .end((err, res) => {
-    //                 chai.request(server)
-    //             });
-    //         })
-    //     });
-    // });
+    describe('/POST /games/join', () => {
+        it('it should be POST join to active game as player', (done) => {
+            let data = {'userName': 'Igor', 'size': '3'};
+            chai.request(server)
+            .post('/games/new')
+            .send(data)
+            .end((err, res) => {
+                let player = {'gameToken': res.body.gameToken, 'userName': 'Ivan'};
+                chai.request(server)
+                .post('/games/join')
+                .send(player)
+                .end((err, res) => {
+                    chai.request(server)
+                    .get('/games/state')
+                    .set('accessToken', res.body.accessToken)
+                    .end((err, res) => {
+                        res.should.be.status(200);
+                        res.body.should.be.a('object');
+                        res.body.should.have.property('status').eql('OK');
+                        res.body.should.have.property('code').eql(0);
+                        res.body.should.have.property('opponent').eql(player.userName);
+                        res.body.should.have.property('state').eql('playing');
+                        done();
+                    });
+                });
+            });
+        });
+
+        it('it should be POST join to active game as observer', (done) => {
+            let data = {'userName': 'Igor', 'size': '3'};
+            chai.request(server)
+            .post('/games/new')
+            .send(data)
+            .end((err, res) => {
+                let gameToken = res.body.gameToken;
+                let player = {'gameToken': gameToken, 'userName': 'Ivan'};
+                chai.request(server)
+                .post('/games/join')
+                .send(player)
+                .end((err, res) => {
+                    let observer = {'gameToken': gameToken, 'userName': 'Anna'};
+                    chai.request(server)
+                    .post('/games/join')
+                    .send(observer)
+                    .end((err, res) => {
+                        chai.request(server)
+                        .get('/games/state')
+                        .set('accessToken', res.body.accessToken)
+                        .end((err, res) => {
+                            res.should.be.status(200);
+                            res.body.should.be.a('object');
+                            res.body.should.have.property('status').eql('OK');
+                            res.body.should.have.property('code').eql(0);
+                            res.body.should.have.property('owner').not.eql(observer.userName);
+                            res.body.should.have.property('opponent').not.eql(observer.userName);
+                            res.body.should.have.property('yourTurn').eql(0);
+                            res.body.should.have.property('state').eql('playing');
+                            done();
+                        });
+                    });
+                });
+            });
+        });
+    });
 });
