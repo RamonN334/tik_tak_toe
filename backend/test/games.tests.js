@@ -83,6 +83,21 @@ describe('/games', () => {
             });
         });
 
+        // it('it should POST create new game with state is ready', (done) => {
+        //     let data = {'userName': 'Igor', 'size': '3'};
+        //     chai.request(server)
+        //     .post('/games/new')
+        //     .send(data)
+        //     .end((err, res) => {
+        //         res.should.have.status(200);
+        //         res.body.should.be.a('object');
+        //         res.body.should.have.property('status').eql('error');
+        //         res.body.should.have.property('code').eql(0);
+        //         res.body.should.have.property('message').eql('Size value is less than 3');
+        //         done();
+        //     });
+        // });
+
         it('it should not create new game cause by missing userName in request', (done) => {
             let data = {'size': 3};
             chai.request(server)
@@ -291,6 +306,295 @@ describe('/games', () => {
                             res.body.should.have.property('state').eql('playing');
                             done();
                         });
+                    });
+                });
+            });
+        });
+    });
+
+    describe('/POST /games/do_step', () => {
+        it('it should be POST do step in active game as owner', (done) => {
+            let data = {'userName': 'Igor', 'size': '3'};
+            chai.request(server)
+            .post('/games/new')
+            .send(data)
+            .end((err, res) => {
+                let ownerAccessToken = res.body.accessToken;
+                let player = {'gameToken': res.body.gameToken, 'userName': 'Ivan'};
+                chai.request(server)
+                .post('/games/join')
+                .send(player)
+                .end((err, res) => {
+                    let data = {'row': 1, 'col': 1};
+                    chai.request(server)
+                    .post('/games/do_step')
+                    .set('accessToken', ownerAccessToken)
+                    .send(data)
+                    .end((err, res) => {
+                        res.should.be.status(200);
+                        res.body.should.be.a('object');
+                        res.body.should.have.property('status').eql('OK');
+                        res.body.should.have.property('code').eql(0);
+                        chai.request(server)
+                        .get('/games/state')
+                        .set('accessToken', ownerAccessToken)
+                        .end((err, res) => {
+                            res.should.be.status(200);
+                            res.body.should.be.a('object');
+                            res.body.should.have.property('status').eql('OK');
+                            res.body.should.have.property('code').eql(0);
+                            res.body.should.have.property('field').eql(['???', '?X?', '???']);
+                            done();
+                        });
+                    });
+                });
+            });
+        });
+
+        it('it should be POST do step in active game as opponent', (done) => {
+            let data = {'userName': 'Igor', 'size': '3'};
+            chai.request(server)
+            .post('/games/new')
+            .send(data)
+            .end((err, res) => {
+                let ownerAccessToken = res.body.accessToken;
+                let player = {'gameToken': res.body.gameToken, 'userName': 'Ivan'};
+                chai.request(server)
+                .post('/games/join')
+                .send(player)
+                .end((err, res) => {
+                    let opponentAccessToken = res.body.accessToken;
+                    let data = {'row': 1, 'col': 1};
+                    chai.request(server)
+                    .post('/games/do_step')
+                    .set('accessToken', ownerAccessToken)
+                    .send(data)
+                    .end((err, res) => {
+                        let data = {'row': 0, 'col': 1};
+                        chai.request(server)
+                        .post('/games/do_step')
+                        .set('accessToken', opponentAccessToken)
+                        .send(data)
+                        .end((err, res) => {
+                            chai.request(server)
+                            .get('/games/state')
+                            .set('accessToken', opponentAccessToken)
+                            .end((err, res) => {
+                                res.should.be.status(200);
+                                res.body.should.be.a('object');
+                                res.body.should.have.property('status').eql('OK');
+                                res.body.should.have.property('code').eql(0);
+                                res.body.should.have.property('field').eql(['?0?', '?X?', '???']);
+                                done();
+                            });
+                        });
+                    });
+                });
+            });
+        });
+
+        it('it should be no move if the cell is already occupied', (done) => {
+            let data = {'userName': 'Igor', 'size': '3'};
+            chai.request(server)
+            .post('/games/new')
+            .send(data)
+            .end((err, res) => {
+                let ownerAccessToken = res.body.accessToken;
+                let opponent = {'gameToken': res.body.gameToken, 'userName': 'Ivan'};
+                chai.request(server)
+                .post('/games/join')
+                .send(opponent)
+                .end((err, res) => {
+                    let opponentAccessToken = res.body.accessToken;
+                    let data = {'row': 1, 'col': 1};
+                    chai.request(server)
+                    .post('/games/do_step')
+                    .set('accessToken', ownerAccessToken)
+                    .send(data)
+                    .end((err, res) => {
+                        res.should.be.status(200);
+                        res.body.should.be.a('object');
+                        res.body.should.have.property('status').eql('OK');
+                        res.body.should.have.property('code').eql(0);
+                        chai.request(server)
+                        .post('/games/do_step')
+                        .set('accessToken', opponentAccessToken)
+                        .send(data)
+                        .end((err, res) => {
+                            res.should.be.status(200);
+                            res.body.should.be.a('object');
+                            res.body.should.have.property('status').eql('error');
+                            res.body.should.have.property('code').eql(6);
+                            res.body.should.have.property('message').eql('The cell is already occupied');
+                            done();
+                        });
+                    });
+                });
+            });
+        });
+
+        it('it should be no move cause by game has not started', (done) => {
+            let data = {'userName': 'Igor', 'size': '3'};
+            chai.request(server)
+            .post('/games/new')
+            .send(data)
+            .end((err, res) => {
+                let data = {'row': 1, 'col': 1};
+                chai.request(server)
+                .post('/games/do_step')
+                .set('accessToken', res.body.accessToken)
+                .send(data)
+                .end((err, res) => {
+                    res.should.be.status(200);
+                    res.body.should.be.a('object');
+                    res.body.should.have.property('status').eql('error');
+                    res.body.should.have.property('code').eql(6);
+                    res.body.should.have.property('message').eql('The game has not started yet');
+                    done();
+                });
+            });
+        });
+
+        it('it should be no move cause by not your turn', (done) => {
+            let data = {'userName': 'Igor', 'size': '3'};
+            chai.request(server)
+            .post('/games/new')
+            .send(data)
+            .end((err, res) => {
+                let player = {'gameToken': res.body.gameToken, 'userName': 'Ivan'};
+                chai.request(server)
+                .post('/games/join')
+                .send(player)
+                .end((err, res) => {
+                    let opponentAccessToken = res.body.accessToken;
+                    let data = {'row': 1, 'col': 1};
+                    chai.request(server)
+                    .post('/games/do_step')
+                    .set('accessToken', opponentAccessToken)
+                    .send(data)
+                    .end((err, res) => {
+                        res.should.be.status(200);
+                        res.body.should.be.a('object');
+                        res.body.should.have.property('status').eql('error');
+                        res.body.should.have.property('code').eql(6);
+                        res.body.should.have.property('message').eql('Now the turn is not this player');
+                        done();
+                    });
+                });
+            });
+        });
+
+        it('it should be no move cause by row field value it not a number', (done) => {
+            let data = {'userName': 'Igor', 'size': '3'};
+            chai.request(server)
+            .post('/games/new')
+            .send(data)
+            .end((err, res) => {
+                let ownerAccessToken = res.body.accessToken;
+                let player = {'gameToken': res.body.gameToken, 'userName': 'Ivan'};
+                chai.request(server)
+                .post('/games/join')
+                .send(player)
+                .end((err, res) => {
+                    let data = {'row': 'test', 'col': 1};
+                    chai.request(server)
+                    .post('/games/do_step')
+                    .set('accessToken', ownerAccessToken)
+                    .send(data)
+                    .end((err, res) => {
+                        res.should.be.status(200);
+                        res.body.should.be.a('object');
+                        res.body.should.have.property('status').eql('error');
+                        res.body.should.have.property('code').eql(5);
+                        res.body.should.have.property('message').eql('Row value is not valid');
+                        done();
+                    });
+                });
+            });
+        });
+
+        it('it should be no move cause by col field value it not a number', (done) => {
+            let data = {'userName': 'Igor', 'size': '3'};
+            chai.request(server)
+            .post('/games/new')
+            .send(data)
+            .end((err, res) => {
+                let ownerAccessToken = res.body.accessToken;
+                let player = {'gameToken': res.body.gameToken, 'userName': 'Ivan'};
+                chai.request(server)
+                .post('/games/join')
+                .send(player)
+                .end((err, res) => {
+                    let data = {'row': 1, 'col': 'test'};
+                    chai.request(server)
+                    .post('/games/do_step')
+                    .set('accessToken', ownerAccessToken)
+                    .send(data)
+                    .end((err, res) => {
+                        res.should.be.status(200);
+                        res.body.should.be.a('object');
+                        res.body.should.have.property('status').eql('error');
+                        res.body.should.have.property('code').eql(5);
+                        res.body.should.have.property('message').eql('Col value is not valid');
+                        done();
+                    });
+                });
+            });
+        });
+
+        it('it should be no move cause by row field value is bigger than field size', (done) => {
+            let data = {'userName': 'Igor', 'size': '3'};
+            chai.request(server)
+            .post('/games/new')
+            .send(data)
+            .end((err, res) => {
+                let ownerAccessToken = res.body.accessToken;
+                let player = {'gameToken': res.body.gameToken, 'userName': 'Ivan'};
+                chai.request(server)
+                .post('/games/join')
+                .send(player)
+                .end((err, res) => {
+                    let data = {'row': 4, 'col': 1};
+                    chai.request(server)
+                    .post('/games/do_step')
+                    .set('accessToken', ownerAccessToken)
+                    .send(data)
+                    .end((err, res) => {
+                        res.should.be.status(200);
+                        res.body.should.be.a('object');
+                        res.body.should.have.property('status').eql('error');
+                        res.body.should.have.property('code').eql(5);
+                        res.body.should.have.property('message').eql('Row or col values are more than field size');
+                        done();
+                    });
+                });
+            });
+        });
+
+        it('it should be no move cause by col field value is bigger than field size', (done) => {
+            let data = {'userName': 'Igor', 'size': '3'};
+            chai.request(server)
+            .post('/games/new')
+            .send(data)
+            .end((err, res) => {
+                let ownerAccessToken = res.body.accessToken;
+                let player = {'gameToken': res.body.gameToken, 'userName': 'Ivan'};
+                chai.request(server)
+                .post('/games/join')
+                .send(player)
+                .end((err, res) => {
+                    let data = {'row': 1, 'col': 4};
+                    chai.request(server)
+                    .post('/games/do_step')
+                    .set('accessToken', ownerAccessToken)
+                    .send(data)
+                    .end((err, res) => {
+                        res.should.be.status(200);
+                        res.body.should.be.a('object');
+                        res.body.should.have.property('status').eql('error');
+                        res.body.should.have.property('code').eql(5);
+                        res.body.should.have.property('message').eql('Row or col values are more than field size');
+                        done();
                     });
                 });
             });
