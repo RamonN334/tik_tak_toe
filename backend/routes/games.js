@@ -122,14 +122,19 @@ router.post('/do_step', (req, res) => {
             repository.getGameByPlayer(accessToken)
             .then((foundGames) => {
                 if (foundGames.length == 0) return res.json(errorResponse(2, 'Not found active game'));
+                const game = foundGames[0];
+                if (game.state != 'playing') return res.json(errorResponse(6, 'The game has not started yet'));
                 repository.getPlayer(accessToken)
                 .then((foundPlayers) => {
                     if (foundPlayers.length == 0) return res.json(errorResponse(2, 'Not found player'));
-                    const game = foundGames[0];
                     const player = foundPlayers[0];
+                    if (!player.yourTurn) return res.json(errorResponse(6, 'Now the turn is not this player'));
                     const row = +userData['row'];
                     const col = +userData['col'];
                     let gameField = JSON.parse(game['field']);
+                    if (row > gameField.length || col > gameField.length) 
+                        return res.json(errorResponse(5, 'Row or col values are more than field size'));
+                    if (gameField[row][col] != '?') return res.json(errorResponse(6, 'The cell is already occupied'));
                     let s = gameField[row];
                     gameField[row] = s.slice(0, col) + player['yourSign'] + s.slice(col + 1);
                     repository.updateGameData(
