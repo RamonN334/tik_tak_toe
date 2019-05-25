@@ -93,12 +93,11 @@ router.post('/join', (req, res) => {
         .then((data) => {
             if (data.length == 0) return res.json(errorResponse(2, 'Not found active game'));
             let game = data[0];
-            if (game['state'] == 'playing') {
+            if (game.state != 'ready') {
                 repository.joinToGameAsObserver(userData['gameToken'], userData['userName'], accessToken);
             }
             else {
                 repository.joinToGameAsPlayer(userData['gameToken'], userData['userName'], accessToken);
-                repository.updateGameData(userData['gameToken'], {state: 'playing', lastUpdate: new Date()});
             }
 
             return res.json({
