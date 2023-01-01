@@ -10,7 +10,7 @@
   "author": "Igor Sitnikov",
   "license": "ISC",
   "dependencies": {
-    "config": "^3.1.0",
+    "config": "^3.3.8",
     "express": "^4.17.0",
     "morgan": "^1.9.1",
     "mysql": "^2.17.1",
